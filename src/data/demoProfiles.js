@@ -174,6 +174,14 @@ export const DEMO_PROFILES = [
         total: 18650000000,
       },
       education_current: 0,
+      perks: {
+        job_perks: [
+          '+ Revive skill: Allows you to revive hospitalized players',
+          '+ 10% course time reduction',
+          '+ 5% crime exp and skill gain',
+        ],
+        stock_perks: ['+ 3 travel items'],
+      },
       education_completed: [
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
         21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 88, 99, 105, 125

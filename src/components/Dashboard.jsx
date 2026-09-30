@@ -3,7 +3,8 @@ import {
   GraduationCap, Landmark, Home, Briefcase, ArrowRight, Sparkles, CheckCircle2,
   TrendingUp, Award, Lock, Shield, AlertTriangle, Bug, Activity,
 } from 'lucide-react'
-import { Bar, ACCENTS } from './ui'
+import { useState } from "react"
+import { Bar, ACCENTS } from "./ui"
 import { Icon } from './icons'
 import { formatMoney, formatNumber, formatAge } from '../lib/format'
 import { jobQualifications, passiveStatus, buildInsights, CITY_PASSIVES, pickBar } from '../lib/torn'
@@ -33,6 +34,14 @@ function StatTile({ label, value, sub, icon }) {
 }
 
 export default function Dashboard({ profile, isDemo, syncError, rawJson, apiSelections, onConnect, onOpenGuide }) {
+  const [manualPassives, setManualPassives] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('lumbercorp_passives_override') || '{}')
+    } catch {
+      return {}
+    }
+  })
+
   if (!profile) {
     return (
       <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-24 text-center">
@@ -64,6 +73,18 @@ export default function Dashboard({ profile, isDemo, syncError, rawJson, apiSele
   const lifeBar = pickBar(bars, 'life', 250)
   const quals = jobQualifications(ws, CITY_JOB_LIST)
   const passives = passiveStatus(profile)
+  const toggleManualPassive = (jobName) => {
+    setManualPassives((prev) => {
+      const next = { ...prev, [jobName]: !prev[jobName] }
+      if (!next[jobName]) delete next[jobName]
+      try {
+        localStorage.setItem('lumbercorp_passives_override', JSON.stringify(next))
+      } catch {
+        /* ignore */
+      }
+      return next
+    })
+  }
   const insights = buildInsights(profile)
   const eduDone = (profile.education_completed || []).length
 
@@ -224,20 +245,36 @@ export default function Dashboard({ profile, isDemo, syncError, rawJson, apiSele
       {/* Passive tracker */}
       <Panel title="The big-3 permanent passives" icon={<Lock size={13} className="text-amber-400" />}>
         <p className="-mt-1 mb-4 text-xs leading-relaxed text-slate-500">
-          Three city-job perks stay on your account forever. Most veterans collect all three before settling into player companies.
+          Three city-job perks stay on your account forever — they're detected from your job perks
+          (they persist after you leave the job) or your current top rank. If the API doesn't show
+          one you've earned, click its tile to mark it manually.
         </p>
         <div className="grid gap-3 sm:grid-cols-3">
           {Object.entries(CITY_PASSIVES).map(([job, p]) => {
-            const unlocked = passives.some((x) => x.jobName === job)
+            const auto = passives.some((x) => x.jobName === job)
+            const manual = !!manualPassives[job]
+            const unlocked = auto || manual
             return (
-              <div
+              <button
                 key={job}
-                className={`rounded-xl border p-4 ${unlocked ? 'border-emerald-500/30 bg-emerald-500/[0.06]' : 'border-slate-800 bg-black/30'}`}
+                onClick={() => toggleManualPassive(job)}
+                title={unlocked ? (auto ? 'Detected from your account data' : 'Manually marked — click to unmark') : 'Mark as unlocked (manual)'}
+                className={`rounded-xl border p-4 text-left transition-all ${
+                  unlocked
+                    ? 'border-emerald-500/30 bg-emerald-500/[0.06]'
+                    : 'border-slate-800 bg-black/30 hover:border-slate-600'
+                }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] font-black text-white">{job}</span>
                   {unlocked ? (
-                    <CheckCircle2 size={16} className="text-emerald-400" />
+                    auto ? (
+                      <CheckCircle2 size={16} className="text-emerald-400" />
+                    ) : (
+                      <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-300">
+                        manual
+                      </span>
+                    )
                   ) : (
                     <Lock size={14} className="text-slate-600" />
                   )}
@@ -246,7 +283,7 @@ export default function Dashboard({ profile, isDemo, syncError, rawJson, apiSele
                   {p.label}
                 </div>
                 <div className="mt-1 text-[11px] leading-relaxed text-slate-500">Top rank: {p.position}</div>
-              </div>
+              </button>
             )
           })}
         </div>

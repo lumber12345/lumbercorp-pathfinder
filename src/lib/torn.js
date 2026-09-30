@@ -8,7 +8,7 @@ export const RANKS = [
   'Celebrity', 'Supreme', 'Idolized', 'Champion', 'Heroic', 'Legendary', 'Elite', 'Invincible',
 ]
 
-export const API_SELECTIONS = 'profile,bars,battlestats,workstats,education,networth'
+export const API_SELECTIONS = 'profile,bars,battlestats,workstats,education,networth,perks'
 
 /**
  * Fetch a Torn profile. Tries the local proxy first (Vite dev middleware /
@@ -94,6 +94,16 @@ export function normalizeProfile(raw) {
     }
   }
 
+  // Perks — combined v1 responses put the perk arrays at the ROOT
+  if (!p.perks) {
+    const perkKeys = ['faction_perks', 'job_perks', 'property_perks', 'education_perks',
+      'enhancer_perks', 'book_perks', 'stock_perks', 'merit_perks']
+    if (perkKeys.some((k) => raw[k] != null)) {
+      p.perks = {}
+      for (const k of perkKeys) if (raw[k] != null) p.perks[k] = raw[k]
+    }
+  }
+
   // Education — some shapes nest under `education`
   if (p.education_completed == null && raw.education?.education_completed) {
     p.education_completed = raw.education.education_completed
@@ -163,12 +173,30 @@ export const CITY_PASSIVES = {
   Law: { position: 'Federal Judge', label: '+5% crime gains', detail: '+5% crime experience & skill gain' },
 }
 
+/**
+ * Passive detection. The big-3 city-job passives are PERMANENT: they show up
+ * in the API's job_perks even after the player leaves the job, so we match
+ * perk strings (scoped to job_perks ONLY — stock/merit perks contain similar
+ * wording and must not trigger false positives) as well as the player's
+ * current position for those still working the ladder.
+ */
 export function passiveStatus(profile) {
+  if (!profile) return []
+  const out = []
   const pos = profile?.job?.position?.toLowerCase()
-  if (!pos) return []
-  return Object.entries(CITY_PASSIVES)
-    .filter(([, p]) => pos === p.position.toLowerCase())
-    .map(([jobName, p]) => ({ jobName, ...p }))
+  const jobPerks = (profile?.perks?.job_perks || []).map((s) => String(s).toLowerCase())
+  const hasJobPerk = (re) => jobPerks.some((p) => re.test(p))
+
+  if (pos === 'brain surgeon' || hasJobPerk(/revive/)) {
+    out.push({ jobName: 'Medical', ...CITY_PASSIVES.Medical })
+  }
+  if (pos === 'principal' || hasJobPerk(/(course time|education)\s*(time|length|course)?\s*reduc/)) {
+    out.push({ jobName: 'Education', ...CITY_PASSIVES.Education })
+  }
+  if (pos === 'federal judge' || hasJobPerk(/crime\s+(exp|skill|experience)/)) {
+    out.push({ jobName: 'Law', ...CITY_PASSIVES.Law })
+  }
+  return out
 }
 
 // ---- Personalized recommendations ------------------------------------------

@@ -1,7 +1,7 @@
 import {
   KeyRound, Zap, Flame, Smile, HeartPulse, Swords, Brain, Dumbbell, Coffee,
   GraduationCap, Landmark, Home, Briefcase, ArrowRight, Sparkles, CheckCircle2,
-  TrendingUp, Award, Lock, Shield,
+  TrendingUp, Award, Lock, Shield, AlertTriangle, Bug,
 } from 'lucide-react'
 import { Bar, ACCENTS } from './ui'
 import { Icon } from './icons'
@@ -32,7 +32,7 @@ function StatTile({ label, value, sub, icon }) {
   )
 }
 
-export default function Dashboard({ profile, isDemo, onConnect, onOpenGuide }) {
+export default function Dashboard({ profile, isDemo, syncError, rawJson, apiSelections, onConnect, onOpenGuide }) {
   if (!profile) {
     return (
       <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-24 text-center">
@@ -73,6 +73,16 @@ export default function Dashboard({ profile, isDemo, onConnect, onOpenGuide }) {
         <div className="flex items-center gap-2.5 rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-3 text-[13px] text-violet-200">
           <Sparkles size={15} className="shrink-0 text-violet-300" />
           You are viewing a <b>demo citizen</b>. Connect your own API key to replace this with live data.
+        </div>
+      )}
+
+      {!isDemo && syncError && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-[13px] text-red-200">
+          <AlertTriangle size={15} className="mt-0.5 shrink-0 text-red-400" />
+          <span>
+            <b>Live sync failed</b> — showing your last saved data.{' '}
+            <span className="font-mono text-[11px] text-red-300/80">{syncError}</span>
+          </span>
         </div>
       )}
 
@@ -281,6 +291,54 @@ export default function Dashboard({ profile, isDemo, onConnect, onOpenGuide }) {
           })}
         </div>
       </Panel>
+      {/* API debug */}
+      {!isDemo && (
+        <details className="group rounded-2xl border border-slate-800 bg-[#11161f]">
+          <summary className="flex cursor-pointer select-none items-center gap-2 px-5 py-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500 transition-colors hover:text-slate-300">
+            <Bug size={13} className="text-slate-500" /> API debug
+            <span className="ml-auto text-[10px] font-medium normal-case tracking-normal text-slate-600">
+              what the Torn API actually returned
+            </span>
+          </summary>
+          <div className="space-y-4 border-t border-slate-800 px-5 py-4">
+            <div>
+              <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                Selections requested {apiSelections ? `(${apiSelections})` : ''}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  ['bars', profile.bars],
+                  ['battlestats', profile.battlestats],
+                  ['workstats', profile.workstats],
+                  ['education', profile.education_completed],
+                  ['networth', profile.networth],
+                ].map(([name, val]) => (
+                  <span
+                    key={name}
+                    className={`rounded-md px-2 py-1 font-mono text-[11px] font-bold ${
+                      val ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'
+                    }`}
+                  >
+                    {val ? '✓' : '✗'} {name}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-slate-600">
+                Red entries mean the API response is missing that selection — bars and stats will show as
+                zero even though the connection succeeded.
+              </p>
+            </div>
+            <div>
+              <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                Raw response (latest sync)
+              </div>
+              <pre className="max-h-64 overflow-auto rounded-lg border border-slate-800 bg-black/40 p-3 font-mono text-[11px] leading-relaxed text-slate-400">
+{rawJson ? rawJson.slice(0, 6000) : 'No raw response in memory — it will appear after the next successful sync (or press the refresh button in the header).'}
+              </pre>
+            </div>
+          </div>
+        </details>
+      )}
     </div>
   )
 }

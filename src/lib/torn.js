@@ -17,7 +17,9 @@ export const API_SELECTIONS = 'profile,bars,battlestats,workstats,education,netw
  * calls work on static hosting (e.g. Render Static Sites).
  */
 export async function fetchTornProfile(apiKey) {
-  const qs = `selections=${encodeURIComponent(API_SELECTIONS)}&key=${encodeURIComponent(apiKey)}&comment=LumbercorpPathfinder`
+  // Note: selections are sent with literal commas — some API gateways are
+  // finicky about %2C-encoded lists. The key itself is always encoded.
+  const qs = `selections=${API_SELECTIONS}&key=${encodeURIComponent(apiKey)}&comment=LumbercorpPathfinder`
   let data
   try {
     const res = await fetch(`/api/torn?${qs}`)

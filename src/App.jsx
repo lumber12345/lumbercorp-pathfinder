@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Header from './components/Header'
 import Home from './components/Home'
 import GuideView from './components/GuideView'
@@ -7,6 +7,7 @@ import ApiKeyModal from './components/ApiKeyModal'
 import MatrixRain from './components/MatrixRain'
 import { useTornProfile } from './hooks/useTornProfile'
 import { professionProgress } from './data/professions'
+import { API_SELECTIONS } from './lib/torn'
 
 function parseHash() {
   const h = window.location.hash.replace(/^#\/?/, '')
@@ -34,6 +35,7 @@ export default function App() {
 
   const torn = useTornProfile()
   const { profile } = torn
+  const tornApiSelections = API_SELECTIONS
 
   const toggleRain = useCallback(() => {
     setRainOn((on) => {
@@ -77,7 +79,7 @@ export default function App() {
     [],
   )
 
-  const content = useMemo(() => {
+  const content = (() => {
     if (view.name === 'guide') {
       return (
         <GuideView key={view.id} profId={view.id} onBack={() => nav({ name: 'home' })} profile={profile} />
@@ -88,20 +90,18 @@ export default function App() {
         <Dashboard
           profile={profile}
           isDemo={torn.isDemo}
+          syncError={torn.error}
+          rawJson={torn.rawJson}
+          apiSelections={tornApiSelections}
           onConnect={() => setModalOpen(true)}
           onOpenGuide={openGuide}
         />
       )
     }
     return (
-      <Home
-        onOpen={openGuide}
-        onConnect={() => setModalOpen(true)}
-        hasProfile={!!profile}
-        getProgress={getProgress}
-      />
+      <Home onOpen={openGuide} onConnect={() => setModalOpen(true)} hasProfile={!!profile} getProgress={getProgress} />
     )
-  }, [view, nav, openGuide, profile, torn.isDemo, getProgress])
+  })()
 
   return (
     <div className="min-h-screen text-slate-100">

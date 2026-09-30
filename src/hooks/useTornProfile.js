@@ -7,6 +7,7 @@ const TS_STORAGE = 'torn_pathfinder_fetched_at'
 
 export function useTornProfile() {
   const [profile, setProfile] = useState(null)
+  const [rawJson, setRawJson] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [fetchedAt, setFetchedAt] = useState(null)
@@ -64,6 +65,7 @@ export function useTornProfile() {
         if (!mounted.current) return false
         if (data.error) throw new Error(data.error.error || 'API error')
         setProfile(data)
+        setRawJson(JSON.stringify(data, null, 2))
         setKey(apiKey)
         setFetchedAt(Date.now())
         persist(data)
@@ -87,6 +89,7 @@ export function useTornProfile() {
     (demo) => {
       const p = { ...demo.profile }
       setProfile(p)
+      setRawJson(null)
       setError(null)
       setFetchedAt(Date.now())
       persist(p)
@@ -103,6 +106,7 @@ export function useTornProfile() {
 
   const disconnect = useCallback(() => {
     setProfile(null)
+    setRawJson(null)
     setError(null)
     setFetchedAt(null)
     try {
@@ -135,6 +139,7 @@ export function useTornProfile() {
 
   return {
     profile,
+    rawJson,
     loading,
     error,
     fetchedAt,

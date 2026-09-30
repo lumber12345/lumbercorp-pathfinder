@@ -133,7 +133,13 @@ export default function App() {
           <ApiKeyModal
             open={modalOpen}
             onClose={() => setModalOpen(false)}
-            onConnect={torn.connect}
+            onConnect={async (apiKey) => {
+              const ok = await torn.connect(apiKey)
+              if (ok) {
+                setModalOpen(false)
+                nav({ name: 'dashboard' })
+              }
+            }}
             onLoadDemo={(d) => {
               torn.loadDemo(d)
               setModalOpen(false)

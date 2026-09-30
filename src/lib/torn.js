@@ -31,6 +31,23 @@ export async function fetchTornProfile(apiKey) {
   return data
 }
 
+// ---- Bar normalization ------------------------------------------------------
+// The documented v1 shape is { current, maximum }, but be tolerant:
+// accept { current, max }, capitalized keys, or a plain number.
+
+export function normalizeBar(bar, fallbackMax = 100) {
+  if (bar == null) return { current: 0, maximum: fallbackMax }
+  if (typeof bar === 'number') return { current: bar, maximum: fallbackMax }
+  const current = Number(bar.current ?? bar.Current ?? 0) || 0
+  const maximum = Number(bar.maximum ?? bar.Maximum ?? bar.max ?? bar.Max ?? fallbackMax) || fallbackMax
+  return { current, maximum }
+}
+
+export function pickBar(bars, name, fallbackMax) {
+  const cap = name[0].toUpperCase() + name.slice(1)
+  return normalizeBar(bars?.[name] ?? bars?.[cap], fallbackMax)
+}
+
 // ---- City job qualification engine -----------------------------------------
 
 export function qualifies(stats, req) {

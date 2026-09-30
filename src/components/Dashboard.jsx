@@ -6,7 +6,7 @@ import {
 import { Bar, ACCENTS } from './ui'
 import { Icon } from './icons'
 import { formatMoney, formatNumber, formatAge } from '../lib/format'
-import { jobQualifications, passiveStatus, buildInsights, CITY_PASSIVES } from '../lib/torn'
+import { jobQualifications, passiveStatus, buildInsights, CITY_PASSIVES, pickBar } from '../lib/torn'
 import { CITY_JOB_LIST } from '../data/professions'
 
 function Panel({ title, icon, children, className = '' }) {
@@ -58,6 +58,10 @@ export default function Dashboard({ profile, isDemo, onConnect, onOpenGuide }) {
   const ws = profile.workstats || {}
   const bs = profile.battlestats || {}
   const bars = profile.bars || {}
+  const energyBar = pickBar(bars, 'energy', 100)
+  const nerveBar = pickBar(bars, 'nerve', 15)
+  const happyBar = pickBar(bars, 'happy', 250)
+  const lifeBar = pickBar(bars, 'life', 250)
   const quals = jobQualifications(ws, CITY_JOB_LIST)
   const passives = passiveStatus(profile)
   const insights = buildInsights(profile)
@@ -109,11 +113,16 @@ export default function Dashboard({ profile, isDemo, onConnect, onOpenGuide }) {
 
         {/* Bars */}
         <div className="relative mt-7 grid gap-4 sm:grid-cols-2">
-          <Bar label="Energy" icon={<Zap size={12} className="text-emerald-400" />} value={bars.energy?.current ?? 0} max={bars.energy?.maximum ?? 100} color="bg-emerald-400" />
-          <Bar label="Nerve" icon={<Flame size={12} className="text-orange-400" />} value={bars.nerve?.current ?? 0} max={bars.nerve?.maximum ?? 15} color="bg-orange-400" />
-          <Bar label="Happy" icon={<Smile size={12} className="text-yellow-300" />} value={bars.happy?.current ?? 0} max={bars.happy?.maximum ?? 250} color="bg-yellow-300" />
-          <Bar label="Life" icon={<HeartPulse size={12} className="text-rose-400" />} value={bars.life?.current ?? 0} max={bars.life?.maximum ?? 250} color="bg-rose-500" />
+          <Bar label="Energy" icon={<Zap size={12} className="text-emerald-400" />} value={energyBar.current} max={energyBar.maximum} color="bg-emerald-400" />
+          <Bar label="Nerve" icon={<Flame size={12} className="text-orange-400" />} value={nerveBar.current} max={nerveBar.maximum} color="bg-orange-400" />
+          <Bar label="Happy" icon={<Smile size={12} className="text-yellow-300" />} value={happyBar.current} max={happyBar.maximum} color="bg-yellow-300" />
+          <Bar label="Life" icon={<HeartPulse size={12} className="text-rose-400" />} value={lifeBar.current} max={lifeBar.maximum} color="bg-rose-500" />
         </div>
+        {!isDemo && (
+          <p className="relative mt-3 text-right text-[10px] font-medium uppercase tracking-wider text-slate-600">
+            Bars auto-sync every minute while this page is open
+          </p>
+        )}
       </div>
 
       {/* Insight cards */}

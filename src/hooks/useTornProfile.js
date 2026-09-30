@@ -122,6 +122,17 @@ export function useTornProfile() {
     }
   }, [])
 
+  // Auto-sync: keep live-key profiles fresh (bars, stats) every 60s while visible.
+  // Demo profiles are static, so they are skipped.
+  useEffect(() => {
+    if (!key || !profile || profile.isDemo) return undefined
+    const id = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return
+      connect(key)
+    }, 60000)
+    return () => clearInterval(id)
+  }, [key, profile?.isDemo, connect])
+
   return {
     profile,
     loading,

@@ -33,6 +33,81 @@ export async function fetchTornProfile(apiKey) {
   return data
 }
 
+// ---- Profile normalization ---------------------------------------------------
+// The live v1 API (selections=profile,bars,battlestats,workstats,...) merges
+// everything into the ROOT object: energy/nerve/happy/life objects and flat
+// strength/defense/speed/dexterity/manual_labor/etc. Some responses (and our
+// demo profiles) use nested bars/battlestats/workstats objects instead.
+// normalizeProfile maps any of these onto the shape the UI expects.
+
+export function decodeEntities(s) {
+  if (typeof s !== 'string') return s
+  return s
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;/g, "'")
+}
+
+const num = (v) => (typeof v === 'number' && !Number.isNaN(v) ? v : 0)
+
+export function normalizeProfile(raw) {
+  if (!raw || typeof raw !== 'object') return raw
+  const p = { ...raw }
+
+  // Bars — prefer a nested bars object; otherwise lift root-level bars
+  if (!p.bars) {
+    p.bars = {
+      energy: raw.energy,
+      nerve: raw.nerve,
+      happy: raw.happy,
+      life: raw.life,
+    }
+  }
+
+  // Battle stats — prefer nested battlestats; otherwise lift root-level numbers
+  if (!p.battlestats) {
+    const hasRoot =
+      raw.strength != null || raw.defense != null || raw.speed != null || raw.dexterity != null
+    if (hasRoot) {
+      const total =
+        raw.total ?? num(raw.strength) + num(raw.defense) + num(raw.speed) + num(raw.dexterity)
+      p.battlestats = {
+        strength: num(raw.strength),
+        defense: num(raw.defense),
+        speed: num(raw.speed),
+        dexterity: num(raw.dexterity),
+        total,
+      }
+    }
+  }
+
+  // Work stats — prefer nested workstats; otherwise lift root-level numbers
+  if (!p.workstats) {
+    if (raw.manual_labor != null || raw.intelligence != null || raw.endurance != null) {
+      p.workstats = {
+        manual_labor: num(raw.manual_labor),
+        intelligence: num(raw.intelligence),
+        endurance: num(raw.endurance),
+      }
+    }
+  }
+
+  // Education — some shapes nest under `education`
+  if (p.education_completed == null && raw.education?.education_completed) {
+    p.education_completed = raw.education.education_completed
+    p.education_current = raw.education.education_current ?? p.education_current
+  }
+
+  // Decode HTML entities in display strings (e.g. "H&amp;M")
+  if (p.job?.company_name) p.job = { ...p.job, company_name: decodeEntities(p.job.company_name) }
+  if (p.faction?.faction_name) p.faction = { ...p.faction, faction_name: decodeEntities(p.faction.faction_name) }
+  if (typeof p.property === 'string') p.property = decodeEntities(p.property)
+
+  return p
+}
+
 // ---- Bar normalization ------------------------------------------------------
 // The documented v1 shape is { current, maximum }, but be tolerant:
 // accept { current, max }, capitalized keys, or a plain number.

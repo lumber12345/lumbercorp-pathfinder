@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { fetchTornProfile } from '../lib/torn'
+import { fetchTornProfile, normalizeProfile } from '../lib/torn'
 
 const KEY_STORAGE = 'torn_pathfinder_api_key'
 const PROFILE_STORAGE = 'torn_pathfinder_profile'
@@ -33,7 +33,7 @@ export function useTornProfile() {
       const cached = localStorage.getItem(PROFILE_STORAGE)
       const ts = Number(localStorage.getItem(TS_STORAGE) || 0)
       if (cached) {
-        setProfile(JSON.parse(cached))
+        setProfile(normalizeProfile(JSON.parse(cached)))
         setFetchedAt(ts || null)
       }
     } catch {
@@ -64,11 +64,12 @@ export function useTornProfile() {
         const data = await fetchTornProfile(apiKey)
         if (!mounted.current) return false
         if (data.error) throw new Error(data.error.error || 'API error')
-        setProfile(data)
+        const normalized = normalizeProfile(data)
+        setProfile(normalized)
         setRawJson(JSON.stringify(data, null, 2))
         setKey(apiKey)
         setFetchedAt(Date.now())
-        persist(data)
+        persist(normalized)
         try {
           localStorage.setItem(KEY_STORAGE, apiKey)
         } catch {
@@ -87,7 +88,7 @@ export function useTornProfile() {
 
   const loadDemo = useCallback(
     (demo) => {
-      const p = { ...demo.profile }
+      const p = normalizeProfile({ ...demo.profile })
       setProfile(p)
       setRawJson(null)
       setError(null)

@@ -1,7 +1,7 @@
 import {
   KeyRound, Zap, Flame, Smile, HeartPulse, Swords, Brain, Dumbbell, Coffee,
   GraduationCap, Landmark, Home, Briefcase, ArrowRight, Sparkles, CheckCircle2,
-  TrendingUp, Award, Lock, Shield, AlertTriangle, Bug,
+  TrendingUp, Award, Lock, Shield, AlertTriangle, Bug, Activity,
 } from 'lucide-react'
 import { Bar, ACCENTS } from './ui'
 import { Icon } from './icons'
@@ -109,6 +109,27 @@ export default function Dashboard({ profile, isDemo, syncError, rawJson, apiSele
                 <Briefcase size={13} className="text-violet-400" />
                 {profile.job?.position ? `${profile.job.position}${profile.job.company_name ? ` · ${profile.job.company_name}` : ''}` : 'Unemployed'}
               </span>
+              {profile.faction?.faction_name && (
+                <span className="flex items-center gap-1.5">
+                  <Swords size={13} className="text-red-400" />
+                  {profile.faction.faction_name}
+                  {profile.faction.position ? ` (${profile.faction.position})` : ''}
+                </span>
+              )}
+              {profile.status?.description && (
+                <span
+                  className={`flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[12px] font-semibold ${
+                    profile.status.color === 'red'
+                      ? 'bg-red-500/15 text-red-300'
+                      : profile.status.color === 'green'
+                        ? 'bg-emerald-500/15 text-emerald-300'
+                        : 'bg-sky-500/15 text-sky-300'
+                  }`}
+                >
+                  <Activity size={12} />
+                  {profile.status.description}
+                </span>
+              )}
               <span className="font-mono text-slate-500">ID #{profile.player_id}</span>
             </div>
           </div>
